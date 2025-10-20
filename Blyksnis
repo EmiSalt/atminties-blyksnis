@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Atminties Blyksnis!</title>
+<meta name="description" content="Atminties Blyksnis – linksmas žaidimas, lavinantis dėmesio koncentraciją ir atmintį!" />
 <style>
   body {
     background: linear-gradient(135deg, #80d0c7, #13547a);
@@ -75,6 +76,12 @@
   #startBtn:hover {
     background: #ffd600;
   }
+  footer {
+    position: absolute;
+    bottom: 10px;
+    font-size: 0.9rem;
+    color: #fff8;
+  }
 </style>
 </head>
 <body>
@@ -82,6 +89,7 @@
   <p id="status">Stebėkite atidžiai...</p>
   <div id="game"></div>
   <button id="startBtn">Pradėti</button>
+  <footer>© 2025 Sukūrė [Tavo vardas]</footer>
 
 <script>
 const gridSize = 4;
@@ -115,7 +123,7 @@ function nextRound() {
   const tiles = document.querySelectorAll('.tile');
   tiles.forEach(t => t.classList.remove('correct', 'wrong'));
 
-  // Kiekviename lygyje parenkama +1 plytelė
+  // Kiekviename lygyje +1 plytelė
   for (let i = 0; i < level; i++) {
     let randomIndex;
     do {
