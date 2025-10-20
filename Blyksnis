@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atminties Blyksnis!</title>
+<style>
+  body {
+    background: linear-gradient(135deg, #80d0c7, #13547a);
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+    text-align: center;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+  }
+  #game {
+    display: grid;
+    grid-template-columns: repeat(4, 80px);
+    grid-gap: 10px;
+    margin: 20px auto;
+  }
+  .tile {
+    width: 80px;
+    height: 80px;
+    background: #1e3c72;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s;
+  }
+  .tile.active {
+    background: #ffea00;
+    transform: scale(1.1);
+  }
+  .tile.correct {
+    background: #00e676;
+    animation: pulse 0.5s;
+  }
+  .tile.wrong {
+    background: #ff5252;
+    animation: shake 0.5s;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  #status {
+    font-size: 1.2rem;
+    margin-top: 10px;
+  }
+  #startBtn {
+    background: #ffea00;
+    color: #333;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background 0.3s;
+  }
+  #startBtn:hover {
+    background: #ffd600;
+  }
+</style>
+</head>
+<body>
+  <h1>🧠 Atminties Blyksnis!</h1>
+  <p id="status">Stebėkite atidžiai...</p>
+  <div id="game"></div>
+  <button id="startBtn">Pradėti</button>
+
+<script>
+const gridSize = 4;
+let sequence = [];
+let userClicks = [];
+let level = 1;
+let clickable = false;
+const game = document.getElementById('game');
+const statusText = document.getElementById('status');
+const startBtn = document.getElementById('startBtn');
+
+// Sukuriamas tinklelis
+for (let i = 0; i < gridSize * gridSize; i++) {
+  const tile = document.createElement('div');
+  tile.classList.add('tile');
+  tile.dataset.index = i;
+  tile.addEventListener('click', handleTileClick);
+  game.appendChild(tile);
+}
+
+function startGame() {
+  level = 1;
+  nextRound();
+}
+
+function nextRound() {
+  clickable = false;
+  sequence = [];
+  userClicks = [];
+  statusText.textContent = `Lygis ${level}: stebėkite atidžiai...`;
+  const tiles = document.querySelectorAll('.tile');
+  tiles.forEach(t => t.classList.remove('correct', 'wrong'));
+
+  // Kiekviename lygyje parenkama +1 plytelė
+  for (let i = 0; i < level; i++) {
+    let randomIndex;
+    do {
+      randomIndex = Math.floor(Math.random() * (gridSize * gridSize));
+    } while (sequence.includes(randomIndex));
+    sequence.push(randomIndex);
+  }
+
+  // Parodoma seka
+  let delay = 500;
+  sequence.forEach((index, i) => {
+    setTimeout(() => {
+      tiles[index].classList.add('active');
+      setTimeout(() => {
+        tiles[index].classList.remove('active');
+        if (i === sequence.length - 1) {
+          setTimeout(() => {
+            clickable = true;
+            statusText.textContent = 'Dabar prisiminkite ir paspauskite tas pačias plyteles!';
+          }, 300);
+        }
+      }, 700);
+    }, delay);
+    delay += 800;
+  });
+}
+
+function handleTileClick(e) {
+  if (!clickable) return;
+  const index = parseInt(e.target.dataset.index);
+  userClicks.push(index);
+
+  if (sequence.includes(index)) {
+    e.target.classList.add('correct');
+  } else {
+    e.target.classList.add('wrong');
+  }
+
+  if (userClicks.length === sequence.length) {
+    clickable = false;
+    checkResult();
+  }
+}
+
+function checkResult() {
+  const correct = userClicks.every(i => sequence.includes(i)) && userClicks.length === sequence.length;
+  if (correct) {
+    statusText.textContent = '✅ Teisingai! Pasiruoškite kitam lygiui...';
+    level++;
+    setTimeout(nextRound, 1500);
+  } else {
+    statusText.textContent = `❌ Klaida! Pasiekėte ${level} lygį. Bandykite dar kartą!`;
+  }
+}
+
+startBtn.addEventListener('click', startGame);
+</script>
+</body>
+</html>
