@@ -154,14 +154,21 @@ function nextRound() {
 function handleTileClick(e) {
   if (!clickable) return;
   const index = parseInt(e.target.dataset.index);
-  userClicks.push(index);
 
-  if (sequence.includes(index)) {
-    e.target.classList.add('correct');
-  } else {
+  // Jei paspaudžia neteisingą plytelę — iškart paleidžiamas naujas žaidimas
+  if (!sequence.includes(index)) {
     e.target.classList.add('wrong');
+    statusText.textContent = `❌ Klaida! Žaidimas pradedamas iš naujo.`;
+    clickable = false;
+    setTimeout(startGame, 1500);
+    return;
   }
 
+  // Teisingas paspaudimas
+  userClicks.push(index);
+  e.target.classList.add('correct');
+
+  // Jei paspaudė tiek, kiek reikia — tikriname rezultatą
   if (userClicks.length === sequence.length) {
     clickable = false;
     checkResult();
@@ -174,8 +181,6 @@ function checkResult() {
     statusText.textContent = '✅ Teisingai! Pasiruoškite kitam lygiui...';
     level++;
     setTimeout(nextRound, 1500);
-  } else {
-    statusText.textContent = `❌ Klaida! Pasiekėte ${level} lygį. Bandykite dar kartą!`;
   }
 }
 
