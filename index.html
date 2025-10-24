@@ -12,15 +12,14 @@
     color: #fff;
     text-align: center;
     margin: 0;
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
   }
   h1 {
     font-size: 2.5rem;
-    margin-bottom: 10px;
+    margin-top: 20px;
   }
   #game {
     display: grid;
@@ -62,6 +61,18 @@
     font-size: 1.2rem;
     margin-top: 10px;
   }
+  #controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: center;
+  }
+  #playerName {
+    padding: 8px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+  }
   #startBtn {
     background: #ffea00;
     color: #333;
@@ -70,15 +81,28 @@
     font-size: 1.2rem;
     border-radius: 8px;
     cursor: pointer;
-    margin-top: 15px;
     transition: background 0.3s;
   }
   #startBtn:hover {
     background: #ffd600;
   }
+  table {
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
+  th {
+    background: rgba(255,255,255,0.2);
+  }
   footer {
-    position: absolute;
-    bottom: 10px;
+    margin-top: auto;
+    margin-bottom: 10px;
     font-size: 0.9rem;
     color: #fff8;
   }
@@ -86,10 +110,22 @@
 </head>
 <body>
   <h1>🧠 Atminties Blyksnis!</h1>
+
+  <div id="controls">
+    <input type="text" id="playerName" placeholder="Įveskite vardą" />
+    <button id="startBtn">Pradėti</button>
+  </div>
+
   <p id="status">Stebėkite atidžiai...</p>
   <div id="game"></div>
-  <button id="startBtn">Pradėti</button>
-  <footer>© 2025 Sukūrė [EmiSalt]</footer>
+
+  <h2>🏆 TOP 20 Rezultatai</h2>
+  <table id="scoreTable">
+    <thead><tr><th>Vieta</th><th>Vardas</th><th>Lygis</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <footer>© 2025 Sukūrė [Tavo vardas]</footer>
 
 <script>
 const gridSize = 4;
@@ -97,10 +133,14 @@ let sequence = [];
 let userIndex = 0;
 let level = 1;
 let clickable = false;
-let inactivityTimer = null; // laikmatis neaktyvumui
+let inactivityTimer = null;
+let playerName = "";
+
 const game = document.getElementById('game');
 const statusText = document.getElementById('status');
 const startBtn = document.getElementById('startBtn');
+const nameInput = document.getElementById('playerName');
+const scoreTable = document.querySelector('#scoreTable tbody');
 
 // Sukuriamas tinklelis
 for (let i = 0; i < gridSize * gridSize; i++) {
@@ -111,8 +151,15 @@ for (let i = 0; i < gridSize * gridSize; i++) {
   game.appendChild(tile);
 }
 
+// Pradžia
 function startGame() {
-  startBtn.style.display = "none"; // paslepia mygtuką
+  playerName = nameInput.value.trim();
+  if (!playerName) {
+    alert("Prašome įvesti vardą!");
+    return;
+  }
+  startBtn.style.display = "none";
+  nameInput.style.display = "none";
   level = 1;
   nextRound();
 }
@@ -126,7 +173,7 @@ function nextRound() {
   const tiles = document.querySelectorAll('.tile');
   tiles.forEach(t => t.classList.remove('correct', 'wrong'));
 
-  // Sukuriama seka (po 1 daugiau kas lygį)
+  // Sukuriama seka
   for (let i = 0; i < level; i++) {
     let randomIndex;
     do {
@@ -146,7 +193,7 @@ function nextRound() {
           setTimeout(() => {
             clickable = true;
             statusText.textContent = 'Dabar paspauskite plyteles tokia pačia eilės tvarka!';
-            startInactivityTimer(); // paleidžiam 10s laikmatį
+            startInactivityTimer();
           }, 300);
         }
       }, 700);
@@ -157,12 +204,11 @@ function nextRound() {
 
 function handleTileClick(e) {
   if (!clickable) return;
-  clearTimeout(inactivityTimer); // perkraunam laikmatį
+  clearTimeout(inactivityTimer);
   startInactivityTimer();
 
   const index = parseInt(e.target.dataset.index);
 
-  // Patikrina ar paspausta teisinga plytelė eilės tvarka
   if (index === sequence[userIndex]) {
     e.target.classList.add('correct');
     userIndex++;
@@ -175,27 +221,49 @@ function handleTileClick(e) {
   } else {
     e.target.classList.add('wrong');
     clickable = false;
-    endGame('❌ Klaida! Žaidimas pradedamas iš naujo.');
+    endGame(`❌ Klaida! Pasiekėte ${level} lygį.`);
   }
 }
 
 function endGame(message) {
   clearTimeout(inactivityTimer);
   statusText.textContent = message;
-  startBtn.style.display = "block"; // rodom mygtuką
+  saveScore(playerName, level);
+  updateScoreTable();
+  startBtn.style.display = "block";
+  nameInput.style.display = "block";
 }
 
 function startInactivityTimer() {
   clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
     clickable = false;
-    endGame('⏰ Laikas baigėsi! Spauskite "Pradėti" norėdami pabandyti dar kartą.');
-  }, 10000); // 10 sekundžių
+    endGame(`⏰ Laikas baigėsi! Pasiekėte ${level} lygį.`);
+  }, 10000);
+}
+
+// --- REZULTATŲ LENTELĖ ---
+function saveScore(name, score) {
+  const scores = JSON.parse(localStorage.getItem('memoryScores') || '[]');
+  scores.push({ name, score });
+  scores.sort((a, b) => b.score - a.score);
+  if (scores.length > 20) scores.length = 20;
+  localStorage.setItem('memoryScores', JSON.stringify(scores));
+}
+
+function updateScoreTable() {
+  const scores = JSON.parse(localStorage.getItem('memoryScores') || '[]');
+  scoreTable.innerHTML = "";
+  scores.forEach((s, i) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${i+1}</td><td>${s.name}</td><td>${s.score}</td>`;
+    scoreTable.appendChild(row);
+  });
 }
 
 startBtn.addEventListener('click', startGame);
+updateScoreTable();
 </script>
 </body>
 </html>
-
 
