@@ -17,10 +17,7 @@
     flex-direction: column;
     align-items: center;
   }
-  h1 {
-    font-size: 2.5rem;
-    margin-top: 20px;
-  }
+  h1 { font-size: 2.5rem; margin-top: 20px; }
   #game {
     display: grid;
     grid-template-columns: repeat(4, 80px);
@@ -35,77 +32,27 @@
     cursor: pointer;
     transition: background 0.3s, transform 0.1s;
   }
-  .tile.active {
-    background: #ffea00;
-    transform: scale(1.1);
-  }
-  .tile.correct {
-    background: #00e676;
-    animation: pulse 0.5s;
-  }
-  .tile.wrong {
-    background: #ff5252;
-    animation: shake 0.5s;
-  }
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-  }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-  }
-  #status {
-    font-size: 1.2rem;
-    margin-top: 10px;
-  }
-  #controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-    align-items: center;
-  }
-  #playerName {
-    padding: 8px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: none;
-  }
+  .tile.active { background: #ffea00; transform: scale(1.1); }
+  .tile.correct { background: #00e676; animation: pulse 0.5s; }
+  .tile.wrong { background: #ff5252; animation: shake 0.5s; }
+  @keyframes pulse { 0%{transform:scale(1);}50%{transform:scale(1.2);}100%{transform:scale(1);} }
+  @keyframes shake { 0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);} }
+  #status { font-size: 1.2rem; margin-top: 10px; }
+  #controls { display:flex; gap:10px; margin-top:10px; align-items:center; }
+  #playerName { padding:8px; font-size:1rem; border-radius:6px; border:none; }
   #startBtn {
-    background: #ffea00;
-    color: #333;
-    border: none;
-    padding: 10px 20px;
-    font-size: 1.2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.3s;
+    background: #ffea00; color: #333; border: none;
+    padding: 10px 20px; font-size: 1.2rem; border-radius: 8px;
+    cursor: pointer; transition: background 0.3s;
   }
-  #startBtn:hover {
-    background: #ffd600;
-  }
+  #startBtn:hover { background: #ffd600; }
   table {
-    border-collapse: collapse;
-    margin-top: 15px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 10px;
-    overflow: hidden;
+    border-collapse: collapse; margin-top: 15px;
+    background: rgba(255,255,255,0.15); border-radius: 10px; overflow: hidden;
   }
-  th, td {
-    padding: 6px 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-  }
-  th {
-    background: rgba(255,255,255,0.2);
-  }
-  footer {
-    margin-top: auto;
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-    color: #fff8;
-  }
+  th, td { padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.2); }
+  th { background: rgba(255,255,255,0.2); }
+  footer { margin-top: auto; margin-bottom: 10px; font-size: 0.9rem; color: #fff8; }
 </style>
 </head>
 <body>
@@ -119,151 +66,171 @@
   <p id="status">Stebėkite atidžiai...</p>
   <div id="game"></div>
 
-  <h2>🏆 TOP 20 Rezultatai</h2>
+  <h2>🏆 TOP 20 Rezultatai (bendri)</h2>
   <table id="scoreTable">
     <thead><tr><th>Vieta</th><th>Vardas</th><th>Lygis</th></tr></thead>
     <tbody></tbody>
   </table>
 
-  <footer>© 2025 Sukūrė [EmiSalt]</footer>
+  <footer>© 2025 Sukūrė [Tavo vardas]</footer>
 
-<script>
-const gridSize = 4;
-let sequence = [];
-let userIndex = 0;
-let level = 1;
-let clickable = false;
-let inactivityTimer = null;
-let playerName = "";
+<script type="module">
+  // Importuojame Firebase modulius
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-const game = document.getElementById('game');
-const statusText = document.getElementById('status');
-const startBtn = document.getElementById('startBtn');
-const nameInput = document.getElementById('playerName');
-const scoreTable = document.querySelector('#scoreTable tbody');
+  // TAVO FIREBASE KONFIGŪRACIJA
+  const firebaseConfig = {
+    apiKey: "AIzaSyDhd9bmwA8q2oB79O3ppTcGQsq7t0cEtJA",
+    authDomain: "atminties-blyksnis.firebaseapp.com",
+    projectId: "atminties-blyksnis",
+    storageBucket: "atminties-blyksnis.firebasestorage.app",
+    messagingSenderId: "1092037991839",
+    appId: "1:1092037991839:web:a7081a5d86c0aa52d6f1aa",
+    measurementId: "G-HXCM0RFB9W",
+    databaseURL: "https://atminties-blyksnis-default-rtdb.firebaseio.com"
+  };
 
-// Sukuriamas tinklelis
-for (let i = 0; i < gridSize * gridSize; i++) {
-  const tile = document.createElement('div');
-  tile.classList.add('tile');
-  tile.dataset.index = i;
-  tile.addEventListener('click', handleTileClick);
-  game.appendChild(tile);
-}
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-// Pradžia
-function startGame() {
-  playerName = nameInput.value.trim();
-  if (!playerName) {
-    alert("Prašome įvesti vardą!");
-    return;
-  }
-  startBtn.style.display = "none";
-  nameInput.style.display = "none";
-  level = 1;
-  nextRound();
-}
+  const gridSize = 4;
+  let sequence = [];
+  let userIndex = 0;
+  let level = 1;
+  let clickable = false;
+  let inactivityTimer = null;
+  let playerName = "";
 
-function nextRound() {
-  clickable = false;
-  sequence = [];
-  userIndex = 0;
-  clearTimeout(inactivityTimer);
-  statusText.textContent = `Lygis ${level}: stebėkite atidžiai...`;
-  const tiles = document.querySelectorAll('.tile');
-  tiles.forEach(t => t.classList.remove('correct', 'wrong'));
+  const game = document.getElementById('game');
+  const statusText = document.getElementById('status');
+  const startBtn = document.getElementById('startBtn');
+  const nameInput = document.getElementById('playerName');
+  const scoreTable = document.querySelector('#scoreTable tbody');
 
-  // Sukuriama seka
-  for (let i = 0; i < level; i++) {
-    let randomIndex;
-    do {
-      randomIndex = Math.floor(Math.random() * (gridSize * gridSize));
-    } while (sequence.includes(randomIndex));
-    sequence.push(randomIndex);
+  // Tinklelis
+  for (let i = 0; i < gridSize * gridSize; i++) {
+    const tile = document.createElement('div');
+    tile.classList.add('tile');
+    tile.dataset.index = i;
+    tile.addEventListener('click', handleTileClick);
+    game.appendChild(tile);
   }
 
-  // Parodoma seka
-  let delay = 500;
-  sequence.forEach((index, i) => {
-    setTimeout(() => {
-      tiles[index].classList.add('active');
-      setTimeout(() => {
-        tiles[index].classList.remove('active');
-        if (i === sequence.length - 1) {
-          setTimeout(() => {
-            clickable = true;
-            statusText.textContent = 'Dabar paspauskite plyteles tokia pačia eilės tvarka!';
-            startInactivityTimer();
-          }, 300);
-        }
-      }, 700);
-    }, delay);
-    delay += 800;
-  });
-}
-
-function handleTileClick(e) {
-  if (!clickable) return;
-  clearTimeout(inactivityTimer);
-  startInactivityTimer();
-
-  const index = parseInt(e.target.dataset.index);
-
-  if (index === sequence[userIndex]) {
-    e.target.classList.add('correct');
-    userIndex++;
-    if (userIndex === sequence.length) {
-      clickable = false;
-      statusText.textContent = '✅ Teisingai! Pasiruoškite kitam lygiui...';
-      level++;
-      setTimeout(nextRound, 1500);
+  function startGame() {
+    playerName = nameInput.value.trim();
+    if (!playerName) {
+      alert("Prašome įvesti vardą!");
+      return;
     }
-  } else {
-    e.target.classList.add('wrong');
-    clickable = false;
-    endGame(`❌ Klaida! Pasiekėte ${level} lygį.`);
+    startBtn.style.display = "none";
+    nameInput.style.display = "none";
+    level = 1;
+    nextRound();
   }
-}
 
-function endGame(message) {
-  clearTimeout(inactivityTimer);
-  statusText.textContent = message;
-  saveScore(playerName, level);
-  updateScoreTable();
-  startBtn.style.display = "block";
-  nameInput.style.display = "block";
-}
-
-function startInactivityTimer() {
-  clearTimeout(inactivityTimer);
-  inactivityTimer = setTimeout(() => {
+  function nextRound() {
     clickable = false;
-    endGame(`⏰ Laikas baigėsi! Pasiekėte ${level} lygį.`);
-  }, 10000);
-}
+    sequence = [];
+    userIndex = 0;
+    clearTimeout(inactivityTimer);
+    statusText.textContent = `Lygis ${level}: stebėkite atidžiai...`;
+    const tiles = document.querySelectorAll('.tile');
+    tiles.forEach(t => t.classList.remove('correct', 'wrong'));
 
-// --- REZULTATŲ LENTELĖ ---
-function saveScore(name, score) {
-  const scores = JSON.parse(localStorage.getItem('memoryScores') || '[]');
-  scores.push({ name, score });
-  scores.sort((a, b) => b.score - a.score);
-  if (scores.length > 20) scores.length = 20;
-  localStorage.setItem('memoryScores', JSON.stringify(scores));
-}
+    for (let i = 0; i < level; i++) {
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * (gridSize * gridSize));
+      } while (sequence.includes(randomIndex));
+      sequence.push(randomIndex);
+    }
 
-function updateScoreTable() {
-  const scores = JSON.parse(localStorage.getItem('memoryScores') || '[]');
-  scoreTable.innerHTML = "";
-  scores.forEach((s, i) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${i+1}</td><td>${s.name}</td><td>${s.score}</td>`;
-    scoreTable.appendChild(row);
-  });
-}
+    let delay = 500;
+    sequence.forEach((index, i) => {
+      setTimeout(() => {
+        tiles[index].classList.add('active');
+        setTimeout(() => {
+          tiles[index].classList.remove('active');
+          if (i === sequence.length - 1) {
+            setTimeout(() => {
+              clickable = true;
+              statusText.textContent = 'Dabar paspauskite plyteles tokia pačia eilės tvarka!';
+              startInactivityTimer();
+            }, 300);
+          }
+        }, 700);
+      }, delay);
+      delay += 800;
+    });
+  }
 
-startBtn.addEventListener('click', startGame);
-updateScoreTable();
+  function handleTileClick(e) {
+    if (!clickable) return;
+    clearTimeout(inactivityTimer);
+    startInactivityTimer();
+    const index = parseInt(e.target.dataset.index);
+    if (index === sequence[userIndex]) {
+      e.target.classList.add('correct');
+      userIndex++;
+      if (userIndex === sequence.length) {
+        clickable = false;
+        statusText.textContent = '✅ Teisingai! Pasiruoškite kitam lygiui...';
+        level++;
+        setTimeout(nextRound, 1500);
+      }
+    } else {
+      e.target.classList.add('wrong');
+      clickable = false;
+      endGame(`❌ Klaida! Pasiekėte ${level} lygį.`);
+    }
+  }
+
+  function endGame(message) {
+    clearTimeout(inactivityTimer);
+    statusText.textContent = message;
+    saveScore(playerName, level);
+    startBtn.style.display = "block";
+    nameInput.style.display = "block";
+  }
+
+  function startInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      clickable = false;
+      endGame(`⏰ Laikas baigėsi! Pasiekėte ${level} lygį.`);
+    }, 10000);
+  }
+
+  // --- Firebase Realtime DB ---
+  function saveScore(name, score) {
+    const scoresRef = ref(db, "scores");
+    push(scoresRef, { name, score, time: Date.now() });
+  }
+
+  function updateScoreTable(scores) {
+    scoreTable.innerHTML = "";
+    scores.slice(0, 20).forEach((s, i) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${i + 1}</td><td>${s.name}</td><td>${s.score}</td>`;
+      scoreTable.appendChild(row);
+    });
+  }
+
+  function listenForScores() {
+    const scoresRef = ref(db, "scores");
+    onValue(scoresRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = Object.values(data || {});
+      list.sort((a, b) => b.score - a.score);
+      updateScoreTable(list);
+    });
+  }
+
+  startBtn.addEventListener('click', startGame);
+  listenForScores();
 </script>
 </body>
 </html>
+
 
