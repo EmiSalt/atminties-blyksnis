@@ -89,12 +89,12 @@
   <p id="status">Stebėkite atidžiai...</p>
   <div id="game"></div>
   <button id="startBtn">Pradėti</button>
-  <footer>© 2025 Sukūrė [EmiSalt]</footer>
+  <footer>© 2025 Sukūrė [Tavo vardas]</footer>
 
 <script>
 const gridSize = 4;
 let sequence = [];
-let userClicks = [];
+let userIndex = 0;
 let level = 1;
 let clickable = false;
 const game = document.getElementById('game');
@@ -118,12 +118,12 @@ function startGame() {
 function nextRound() {
   clickable = false;
   sequence = [];
-  userClicks = [];
+  userIndex = 0;
   statusText.textContent = `Lygis ${level}: stebėkite atidžiai...`;
   const tiles = document.querySelectorAll('.tile');
   tiles.forEach(t => t.classList.remove('correct', 'wrong'));
 
-  // Kiekviename lygyje +1 plytelė
+  // Sukuriama seka (po 1 daugiau kas lygį)
   for (let i = 0; i < level; i++) {
     let randomIndex;
     do {
@@ -142,7 +142,7 @@ function nextRound() {
         if (i === sequence.length - 1) {
           setTimeout(() => {
             clickable = true;
-            statusText.textContent = 'Dabar prisiminkite ir paspauskite tas pačias plyteles!';
+            statusText.textContent = 'Dabar paspauskite plyteles tokia pačia eilės tvarka!';
           }, 300);
         }
       }, 700);
@@ -154,33 +154,23 @@ function nextRound() {
 function handleTileClick(e) {
   if (!clickable) return;
   const index = parseInt(e.target.dataset.index);
+  const tiles = document.querySelectorAll('.tile');
 
-  // Jei paspaudžia neteisingą plytelę — iškart paleidžiamas naujas žaidimas
-  if (!sequence.includes(index)) {
+  // Patikrina ar paspausta teisinga plytelė eilės tvarka
+  if (index === sequence[userIndex]) {
+    e.target.classList.add('correct');
+    userIndex++;
+    if (userIndex === sequence.length) {
+      clickable = false;
+      statusText.textContent = '✅ Teisingai! Pasiruoškite kitam lygiui...';
+      level++;
+      setTimeout(nextRound, 1500);
+    }
+  } else {
     e.target.classList.add('wrong');
+    clickable = false;
     statusText.textContent = `❌ Klaida! Žaidimas pradedamas iš naujo.`;
-    clickable = false;
     setTimeout(startGame, 1500);
-    return;
-  }
-
-  // Teisingas paspaudimas
-  userClicks.push(index);
-  e.target.classList.add('correct');
-
-  // Jei paspaudė tiek, kiek reikia — tikriname rezultatą
-  if (userClicks.length === sequence.length) {
-    clickable = false;
-    checkResult();
-  }
-}
-
-function checkResult() {
-  const correct = userClicks.every(i => sequence.includes(i)) && userClicks.length === sequence.length;
-  if (correct) {
-    statusText.textContent = '✅ Teisingai! Pasiruoškite kitam lygiui...';
-    level++;
-    setTimeout(nextRound, 1500);
   }
 }
 
@@ -188,3 +178,4 @@ startBtn.addEventListener('click', startGame);
 </script>
 </body>
 </html>
+
