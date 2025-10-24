@@ -89,7 +89,7 @@
   <p id="status">Stebėkite atidžiai...</p>
   <div id="game"></div>
   <button id="startBtn">Pradėti</button>
-  <footer>© 2025 Sukūrė [EmiSalt]</footer>
+  <footer>© 2025 Sukūrė [Tavo vardas]</footer>
 
 <script>
 const gridSize = 4;
@@ -97,6 +97,7 @@ let sequence = [];
 let userIndex = 0;
 let level = 1;
 let clickable = false;
+let inactivityTimer = null; // laikmatis neaktyvumui
 const game = document.getElementById('game');
 const statusText = document.getElementById('status');
 const startBtn = document.getElementById('startBtn');
@@ -111,6 +112,7 @@ for (let i = 0; i < gridSize * gridSize; i++) {
 }
 
 function startGame() {
+  startBtn.style.display = "none"; // paslepia mygtuką
   level = 1;
   nextRound();
 }
@@ -119,6 +121,7 @@ function nextRound() {
   clickable = false;
   sequence = [];
   userIndex = 0;
+  clearTimeout(inactivityTimer);
   statusText.textContent = `Lygis ${level}: stebėkite atidžiai...`;
   const tiles = document.querySelectorAll('.tile');
   tiles.forEach(t => t.classList.remove('correct', 'wrong'));
@@ -143,6 +146,7 @@ function nextRound() {
           setTimeout(() => {
             clickable = true;
             statusText.textContent = 'Dabar paspauskite plyteles tokia pačia eilės tvarka!';
+            startInactivityTimer(); // paleidžiam 10s laikmatį
           }, 300);
         }
       }, 700);
@@ -153,8 +157,10 @@ function nextRound() {
 
 function handleTileClick(e) {
   if (!clickable) return;
+  clearTimeout(inactivityTimer); // perkraunam laikmatį
+  startInactivityTimer();
+
   const index = parseInt(e.target.dataset.index);
-  const tiles = document.querySelectorAll('.tile');
 
   // Patikrina ar paspausta teisinga plytelė eilės tvarka
   if (index === sequence[userIndex]) {
@@ -169,13 +175,27 @@ function handleTileClick(e) {
   } else {
     e.target.classList.add('wrong');
     clickable = false;
-    statusText.textContent = `❌ Klaida! Žaidimas pradedamas iš naujo.`;
-    setTimeout(startGame, 1500);
+    endGame('❌ Klaida! Žaidimas pradedamas iš naujo.');
   }
+}
+
+function endGame(message) {
+  clearTimeout(inactivityTimer);
+  statusText.textContent = message;
+  startBtn.style.display = "block"; // rodom mygtuką
+}
+
+function startInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    clickable = false;
+    endGame('⏰ Laikas baigėsi! Spauskite "Pradėti" norėdami pabandyti dar kartą.');
+  }, 10000); // 10 sekundžių
 }
 
 startBtn.addEventListener('click', startGame);
 </script>
 </body>
 </html>
+
 
